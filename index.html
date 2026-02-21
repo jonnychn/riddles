@@ -1,0 +1,896 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🏮 元宵猜燈謎</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --red: #c0392b;
+    --red-dark: #962d22;
+    --red-light: #e74c3c;
+    --gold: #f39c12;
+    --gold-light: #f7dc6f;
+    --gold-dark: #d4890a;
+    --cream: #fdf6e3;
+    --text: #2c1810;
+    --shadow: rgba(0,0,0,0.25);
+  }
+
+  body {
+    font-family: 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+    background: var(--red);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background-image:
+      radial-gradient(ellipse at top, #e74c3c 0%, #c0392b 50%, #962d22 100%);
+  }
+
+  #app {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ========= SCREENS ========= */
+  .screen {
+    display: none;
+    width: 100%;
+    min-height: 100vh;
+    padding: 0 0 40px 0;
+    animation: fadeIn 0.3s ease;
+  }
+  .screen.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ========= HOME SCREEN ========= */
+  #home-header {
+    text-align: center;
+    padding: 36px 20px 24px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 100%);
+  }
+
+  .lantern-row {
+    font-size: 2.4rem;
+    letter-spacing: 8px;
+    display: block;
+    animation: sway 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes sway {
+    from { transform: rotate(-3deg); }
+    to   { transform: rotate(3deg); }
+  }
+
+  #home-header h1 {
+    color: var(--gold-light);
+    font-size: 2rem;
+    font-weight: 900;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    margin: 8px 0 4px;
+    letter-spacing: 2px;
+  }
+
+  #home-header p {
+    color: rgba(255,255,255,0.85);
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+  }
+
+  /* Random button */
+  #random-btn {
+    display: block;
+    margin: 0 20px 24px;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--text);
+    border: none;
+    border-radius: 14px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    letter-spacing: 1px;
+    transition: transform 0.1s, box-shadow 0.1s;
+    width: calc(100% - 40px);
+  }
+  #random-btn:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+  /* Category cards */
+  .categories-label {
+    color: var(--gold-light);
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    text-align: center;
+    margin-bottom: 12px;
+    opacity: 0.8;
+  }
+
+  .categories-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 20px;
+  }
+
+  .cat-card {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 14px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    backdrop-filter: blur(4px);
+  }
+  .cat-card:active { transform: scale(0.97); background: rgba(255,255,255,0.2); }
+
+  .cat-icon { font-size: 1.8rem; flex-shrink: 0; }
+
+  .cat-info { flex: 1; }
+  .cat-name { color: #fff; font-size: 1.05rem; font-weight: 700; }
+  .cat-hint { color: rgba(255,255,255,0.6); font-size: 0.78rem; margin-top: 2px; }
+
+  .cat-badge {
+    background: var(--gold);
+    color: var(--text);
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+
+  /* ========= GAME SCREEN ========= */
+  #game-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 16px 12px;
+    gap: 10px;
+  }
+
+  #back-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    font-size: 1.4rem;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  #back-btn:active { background: rgba(255,255,255,0.3); }
+
+  #game-cat-label {
+    color: var(--gold-light);
+    font-size: 0.9rem;
+    font-weight: 600;
+    flex: 1;
+  }
+
+  #shuffle-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    font-size: 1.1rem;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.3s;
+  }
+  #shuffle-btn:active { background: rgba(255,255,255,0.3); transform: rotate(180deg); }
+
+  /* Progress bar */
+  #progress-wrap {
+    padding: 0 16px 16px;
+  }
+  #progress-track {
+    background: rgba(255,255,255,0.2);
+    border-radius: 99px;
+    height: 6px;
+    overflow: hidden;
+  }
+  #progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+  #progress-label {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.75rem;
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  /* Riddle card */
+  #riddle-card {
+    margin: 0 16px;
+    background: var(--cream);
+    border-radius: 20px;
+    padding: 28px 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #riddle-card::before {
+    content: '謎';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 80px;
+    color: rgba(192,57,43,0.06);
+    font-weight: 900;
+    pointer-events: none;
+  }
+
+  #riddle-text {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    line-height: 1.7;
+    letter-spacing: 0.5px;
+  }
+
+  #riddle-category-tag {
+    font-size: 0.72rem;
+    color: var(--red);
+    background: rgba(192,57,43,0.1);
+    padding: 3px 10px;
+    border-radius: 99px;
+    margin-bottom: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  /* Answer section */
+  #answer-section {
+    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #reveal-btn {
+    background: linear-gradient(135deg, var(--red-light), var(--red));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 32px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(192,57,43,0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+    letter-spacing: 1px;
+    width: 100%;
+  }
+  #reveal-btn:active { transform: scale(0.97); }
+
+  #answer-box {
+    display: none;
+    width: 100%;
+    background: linear-gradient(135deg, #fff8e1, #fff3cd);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  #answer-box.visible { display: block; }
+
+  @keyframes popIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  #answer-label {
+    font-size: 0.72rem;
+    color: var(--gold-dark);
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  #answer-text {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--red-dark);
+    letter-spacing: 2px;
+  }
+
+  /* Navigation */
+  #nav-row {
+    display: flex;
+    gap: 10px;
+    margin: 20px 16px 0;
+  }
+
+  .nav-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 1px;
+  }
+  .nav-btn:active { background: rgba(255,255,255,0.28); transform: scale(0.97); }
+  .nav-btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* ========= CONFETTI ========= */
+  #confetti-container {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 999;
+    overflow: hidden;
+  }
+
+  .confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 14px;
+    border-radius: 2px;
+    opacity: 0;
+    animation: confettiFall var(--dur, 1.2s) ease-in var(--delay, 0s) forwards;
+  }
+
+  @keyframes confettiFall {
+    0%   { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+    80%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(var(--fall, 600px)) rotate(var(--rot, 540deg)) scale(0.6); }
+  }
+
+  /* ========= SWIPE HINT ========= */
+  #swipe-hint {
+    text-align: center;
+    color: rgba(255,255,255,0.45);
+    font-size: 0.72rem;
+    margin-top: 16px;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="confetti-container"></div>
+
+  <!-- ===== HOME SCREEN ===== -->
+  <div id="screen-home" class="screen active">
+    <div id="home-header">
+      <span class="lantern-row">🏮 🏮 🏮</span>
+      <h1>元宵猜燈謎</h1>
+      <p>點選類別開始猜謎！</p>
+    </div>
+
+    <button id="random-btn">🎲 隨機來一題</button>
+
+    <p class="categories-label">▸ 選擇類別 ◂</p>
+
+    <div class="categories-grid" id="categories-grid"></div>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="screen-game" class="screen">
+    <div id="game-header">
+      <button id="back-btn" title="返回">←</button>
+      <span id="game-cat-label"></span>
+      <button id="shuffle-btn" title="洗牌">🔀</button>
+    </div>
+
+    <div id="progress-wrap">
+      <div id="progress-track"><div id="progress-fill"></div></div>
+      <div id="progress-label"></div>
+    </div>
+
+    <div id="riddle-card">
+      <div id="riddle-category-tag"></div>
+      <div id="riddle-text"></div>
+      <div id="answer-section">
+        <button id="reveal-btn">💡 顯示答案</button>
+        <div id="answer-box">
+          <div id="answer-label">答案是…</div>
+          <div id="answer-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="nav-row">
+      <button class="nav-btn" id="prev-btn">◀ 上一題</button>
+      <button class="nav-btn" id="next-btn">下一題 ▶</button>
+    </div>
+
+    <div id="swipe-hint">← 左右滑動換題 →</div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// DATA
+// ================================================================
+const CATEGORIES = [
+  {
+    id: 'char',
+    name: '猜一個字',
+    icon: '🈵',
+    hint: '猜字謎，動動腦！',
+    riddles: [
+      { q: '手語（猜一字）', a: '批' },
+      { q: '多一半（猜一字）', a: '夕' },
+      { q: '九十九（猜一字）', a: '白' },
+      { q: '一人在內（猜一字）', a: '肉' },
+      { q: '十個哥哥（猜一字）', a: '克' },
+      { q: '金木水火（猜一字）', a: '坎' },
+      { q: '有點自大（猜一字）', a: '臭' },
+      { q: '目空一切（猜一字）', a: '口' },
+      { q: '美中不足（猜一字）', a: '羊' },
+      { q: '男生太多（猜一字）', a: '妙' },
+      { q: '旅行坐飛機（猜一字）', a: '輩' },
+      { q: '早不說晚不說（猜一字）', a: '許' },
+      { q: '七人頭上長草（猜一字）', a: '花' },
+      { q: '一口吃掉牛尾巴（猜一字）', a: '告' },
+      { q: '大火燒到耳朵邊（猜一字）', a: '耿' },
+      { q: '八個兄弟一起賞月（猜一字）', a: '脫' },
+      { q: '只有姐姐妹妹和弟弟（猜一字）', a: '歌' },
+      { q: '需要一半，留下一半（猜一字）', a: '雷' },
+      { q: '一家有四口，還有一隻狗（猜一字）', a: '器' },
+      { q: '一人一張口，口下長只手（猜一字）', a: '拿' },
+    ]
+  },
+  {
+    id: 'person',
+    name: '猜人物',
+    icon: '🌟',
+    hint: '明星、卡通、歷史人物！',
+    riddles: [
+      { q: '國王搭飛機（猜一明星）', a: '王菲（王"飛"）' },
+      { q: '金金金金金（猜一明星）', a: '金城武（金"乘五"）' },
+      { q: '蚊子叮鼠牛虎兔龍蛇馬羊猴雞豬（猜一卡通人物）', a: '布丁狗（"不叮"狗）' },
+      { q: '用兩隻腳走路的老鼠（猜一卡通人物）', a: '米老鼠' },
+      { q: '電視機聲音關小聲點（猜一神明）', a: '觀世音（音似「關小聲」）' },
+      { q: '降落傘（猜一歷史人物）', a: '張飛' },
+      { q: '回頭是岸（猜一歷史文學家）', a: '歸有光' },
+      { q: '薏仁被趕出家門（猜一種人物）', a: '街頭藝人' },
+      { q: '一口井、一杯茶、兩個杯子（猜一種人物）', a: '警察伯伯（"井、茶、杯、杯"）' },
+      { q: '黑人和白雪公主結婚生下的小孩（猜一童話故事人物）', a: '灰姑娘（白+黑=灰）' },
+    ]
+  },
+  {
+    id: 'object',
+    name: '猜物品',
+    icon: '🎁',
+    hint: '日常生活物品猜猜看！',
+    riddles: [
+      { q: '拿人鼻子當馬騎（猜一物品）', a: '眼鏡' },
+      { q: '出入成雙，酸甜苦辣味總先嚐（猜一物品）', a: '筷子' },
+      { q: '不能吃不能喝，每天都要嚐一口（猜一物品）', a: '牙膏' },
+      { q: '綠衣漢，街上站，光吃紙，不吃飯（猜一物品）', a: '郵筒' },
+      { q: '一個入口，兩條隧道，只進一條，無法使用（猜一物品）', a: '褲子' },
+      { q: '有硬有軟，有長有寬，白天空閒，夜晚上班（猜一物品）', a: '床' },
+      { q: '指著你的臉、按著你的心，通知你主人，趕快來開門（猜一物品）', a: '門鈴' },
+      { q: '會走沒有腿，會吃沒有嘴，過河沒有水，死了沒有鬼（猜一物品）', a: '象棋' },
+      { q: '遠看像小丘，近看像樓梯，上去一步步，一下滑到底（猜一物品）', a: '滑梯' },
+      { q: '前面來隻船，舵手在上邊，來時下小雨，走後路已乾（猜一物品）', a: '熨斗' },
+    ]
+  },
+  {
+    id: 'food',
+    name: '猜食物／水果',
+    icon: '🍊',
+    hint: '吃貨必勝！',
+    riddles: [
+      { q: '一種食物有三個姓氏（猜一食物）', a: '羅宋湯' },
+      { q: '馬不信，把老鼠揪了起來（猜一食物）', a: '馬鈴薯（"馬拎鼠"）' },
+      { q: '下面是火山，上面是大海，海里寶貝多，快快撈上來（猜一食物）', a: '火鍋' },
+      { q: '珍珠白姑娘，許配竹葉郎，穿衣去洗澡，脫衣上牙床（猜一食物）', a: '粽子' },
+      { q: '本來一大片，變成條條線，是線不做衣，碗裡常常見（猜一食物）', a: '麵條' },
+      { q: '白白身子圓溜溜，樣子像個桌球，放在鍋里煮一煮，全家吃它過十五（猜一食物）', a: '湯圓' },
+      { q: '兄弟兩個瘦又長，扭在一起下池塘，池塘裡面打個滾，撈起變得黃又胖（猜一食物）', a: '油條' },
+      { q: '白又方，嫩又香，能做菜，能煮湯，豆子是它爹和媽，它和爹媽不一樣（猜一食物）', a: '豆腐' },
+      { q: '彎彎曲曲像彈簧，袋袋盒盒裡面裝，想要吃它很方便，只需開水燙一燙（猜一食物）', a: '泡麵' },
+      { q: '不平凡的結果（猜一水果）', a: '奇異果' },
+      { q: '圓圓的身體，全身是疙瘩，有點像苦瓜（猜一水果）', a: '釋迦' },
+      { q: '小小罈子，裝滿餃子，吃掉餃子，吐出珠子（猜一水果）', a: '橘子' },
+      { q: '脫了紅袍子，是個白胖子；去了白胖子，是顆黑丸子（猜一水果）', a: '荔枝' },
+      { q: '身上長白毛，紅尖嘴兒翹，背上一條溝，肚裡好味道（猜一水果）', a: '水蜜桃' },
+      { q: '有水很多不是井，肥肥胖胖不是豬；鮮紅欲滴不是肉，圓圓滾滾不是球（猜一水果）', a: '西瓜' },
+    ]
+  },
+  {
+    id: 'fun',
+    name: '創意趣味',
+    icon: '😂',
+    hint: '腦筋急轉彎，笑到肚子痛！',
+    riddles: [
+      { q: '熊貓一生中最大的遺憾是什麼？', a: '沒有彩色照片' },
+      { q: '為什麼后羿射日只射下九個太陽？', a: '他不想摸黑回家' },
+      { q: '一根線可以織成一條長布，那兩根線呢？', a: '一條更長的布' },
+      { q: '王大嬸整天說個不停，可是有一個月她說得最少，是哪個月？', a: '二月份' },
+      { q: '軟糖哭了會變成什麼？', a: 'QQ 軟糖（哭哭軟糖）' },
+      { q: '日月潭的中間是什麼？', a: '月' },
+      { q: '什麼瓷器最貴？', a: '碰瓷' },
+      { q: '喝哪一種果汁最辛苦？', a: '絞盡腦汁' },
+      { q: '為什麼大部份佛教徒都在北半球？', a: '因為南「無」阿彌陀佛' },
+      { q: '煮一顆蛋要四分鐘，煮八顆蛋要幾分鐘？', a: '四分鐘' },
+      { q: '什麼東西破了卻變得更好？', a: '紀錄' },
+      { q: '吃什麼是最安全的？', a: '吃虧' },
+      { q: '用什麼辦法可以讓眉毛長在眼睛下面？', a: '倒立' },
+      { q: '作家的最後一本書是什麼書？', a: '遺書' },
+      { q: '阿拉丁有幾個哥哥？', a: '三個（阿拉「甲」、阿拉「乙」、阿拉「丙」）' },
+      { q: '什麼東西明明是圓的，好多人都說它是方的？', a: '方向盤' },
+      { q: '什麼鴨子用兩隻腳走路？', a: '所有的鴨子（是不是想說唐老鴨？）' },
+      { q: '一輛客車發生了事故，所有的人都受傷了，為什麼小明卻沒事？', a: '因為他不在車上' },
+      { q: '啦啦隊不准坐下（猜地點）', a: '加油站' },
+      { q: '輕聲細語的說（猜運動項目）', a: '柔道' },
+      { q: '星星的重量是 8 公克（猜一品牌）', a: 'Starbucks（星"八克"）' },
+      { q: '偷什麼東西不犯法？', a: '偷笑' },
+      { q: '什麼地方很輕鬆就可以爬上去，卻很難下得來？', a: '床上' },
+      { q: '用南瓜打頭和用西瓜打頭，哪個比較痛？', a: '頭比較痛' },
+      { q: '大月有 31 天，小月有 30 天，哪個月有 28 天？', a: '每個月都有 28 天' },
+      { q: '八十歲照鏡子會是什麼樣子？', a: '老樣子' },
+      { q: '哪個數字最懶？哪個數字最勤快？', a: '1 最懶，2 最勤快（一不作，二不休）' },
+    ]
+  }
+];
+
+// ================================================================
+// STATE
+// ================================================================
+let state = {
+  catIndex: 0,
+  order: [],       // shuffled indices into riddles array
+  pos: 0,          // position in order
+  revealed: false,
+  isRandom: false,
+  randomPool: [],  // [{catIndex, riddleIndex}]
+  randomPos: 0,
+};
+
+// ================================================================
+// AUDIO (Web Audio API – no external files)
+// ================================================================
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  return audioCtx;
+}
+
+function playChime() {
+  try {
+    const ctx = getAudioCtx();
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.25, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      osc.start(t);
+      osc.stop(t + 0.5);
+    });
+  } catch(e) {}
+}
+
+function playBoing() {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.4);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+}
+
+function playSound(catId) {
+  if (catId === 'fun') playBoing();
+  else playChime();
+}
+
+// ================================================================
+// CONFETTI
+// ================================================================
+const confettiColors = ['#f39c12','#e74c3c','#f7dc6f','#ff6b6b','#fff','#ffd700','#ff9ff3'];
+
+function launchConfetti() {
+  const container = document.getElementById('confetti-container');
+  container.innerHTML = '';
+  const count = 40;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.setProperty('--delay', (Math.random() * 0.4) + 's');
+    el.style.setProperty('--dur', (0.9 + Math.random() * 0.6) + 's');
+    el.style.setProperty('--fall', (300 + Math.random() * 400) + 'px');
+    el.style.setProperty('--rot', (Math.random() > 0.5 ? '' : '-') + (360 + Math.random()*360) + 'deg');
+    el.style.left = (Math.random() * 100) + '%';
+    el.style.top = (10 + Math.random() * 30) + '%';
+    el.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+    el.style.transform = `rotate(${Math.random()*360}deg)`;
+    container.appendChild(el);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 2000);
+}
+
+// ================================================================
+// UTILITIES
+// ================================================================
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function makeOrder(len) {
+  return Array.from({length: len}, (_, i) => i);
+}
+
+// ================================================================
+// RENDER
+// ================================================================
+function renderHome() {
+  document.getElementById('screen-home').classList.add('active');
+  document.getElementById('screen-game').classList.remove('active');
+}
+
+function renderGame() {
+  document.getElementById('screen-home').classList.remove('active');
+  document.getElementById('screen-game').classList.add('active');
+  updateGameUI();
+}
+
+function currentRiddle() {
+  if (state.isRandom) {
+    const ref = state.randomPool[state.randomPos];
+    return {
+      riddle: CATEGORIES[ref.catIndex].riddles[ref.riddleIndex],
+      catId: CATEGORIES[ref.catIndex].id,
+      catName: CATEGORIES[ref.catIndex].name,
+    };
+  }
+  const cat = CATEGORIES[state.catIndex];
+  const idx = state.order[state.pos];
+  return { riddle: cat.riddles[idx], catId: cat.id, catName: cat.name };
+}
+
+function totalCount() {
+  if (state.isRandom) return state.randomPool.length;
+  return state.order.length;
+}
+
+function currentPos() {
+  if (state.isRandom) return state.randomPos;
+  return state.pos;
+}
+
+function updateGameUI() {
+  const { riddle, catId, catName } = currentRiddle();
+  const pos = currentPos();
+  const total = totalCount();
+
+  // Category label
+  document.getElementById('game-cat-label').textContent =
+    state.isRandom ? '🎲 隨機模式' : CATEGORIES[state.catIndex].icon + ' ' + catName;
+
+  // Category tag on card
+  document.getElementById('riddle-category-tag').textContent = catName;
+
+  // Riddle text
+  document.getElementById('riddle-text').textContent = riddle.q;
+
+  // Answer
+  document.getElementById('answer-text').textContent = riddle.a;
+  document.getElementById('answer-box').classList.remove('visible');
+  document.getElementById('reveal-btn').style.display = '';
+
+  state.revealed = false;
+
+  // Progress
+  const pct = total > 1 ? ((pos) / (total - 1)) * 100 : 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${pos + 1} / ${total}`;
+
+  // Nav buttons
+  document.getElementById('prev-btn').disabled = pos === 0;
+  document.getElementById('next-btn').disabled = pos === total - 1;
+
+  // Shuffle btn visibility
+  document.getElementById('shuffle-btn').style.display = state.isRandom ? 'none' : '';
+}
+
+// ================================================================
+// ACTIONS
+// ================================================================
+function startCategory(catIndex) {
+  state.isRandom = false;
+  state.catIndex = catIndex;
+  state.order = makeOrder(CATEGORIES[catIndex].riddles.length);
+  state.pos = 0;
+  renderGame();
+}
+
+function startRandom() {
+  state.isRandom = true;
+  const pool = [];
+  CATEGORIES.forEach((cat, ci) => {
+    cat.riddles.forEach((_, ri) => pool.push({ catIndex: ci, riddleIndex: ri }));
+  });
+  state.randomPool = shuffleArray(pool);
+  state.randomPos = 0;
+  renderGame();
+}
+
+function revealAnswer() {
+  if (state.revealed) return;
+  state.revealed = true;
+  const { catId } = currentRiddle();
+  document.getElementById('answer-box').classList.add('visible');
+  document.getElementById('reveal-btn').style.display = 'none';
+  playSound(catId);
+  launchConfetti();
+}
+
+function goNext() {
+  if (state.isRandom) {
+    if (state.randomPos < state.randomPool.length - 1) {
+      state.randomPos++;
+      updateGameUI();
+    }
+  } else {
+    if (state.pos < state.order.length - 1) {
+      state.pos++;
+      updateGameUI();
+    }
+  }
+}
+
+function goPrev() {
+  if (state.isRandom) {
+    if (state.randomPos > 0) {
+      state.randomPos--;
+      updateGameUI();
+    }
+  } else {
+    if (state.pos > 0) {
+      state.pos--;
+      updateGameUI();
+    }
+  }
+}
+
+function shuffleCurrent() {
+  if (state.isRandom) return;
+  const cat = CATEGORIES[state.catIndex];
+  state.order = shuffleArray(makeOrder(cat.riddles.length));
+  state.pos = 0;
+  updateGameUI();
+  // Quick visual feedback – rotate icon
+  const btn = document.getElementById('shuffle-btn');
+  btn.style.transform = 'rotate(360deg)';
+  setTimeout(() => { btn.style.transform = ''; }, 300);
+}
+
+// ================================================================
+// SWIPE SUPPORT
+// ================================================================
+let touchStartX = 0;
+let touchStartY = 0;
+
+function setupSwipe(el) {
+  el.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  el.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) goNext();
+      else goPrev();
+    }
+  }, { passive: true });
+}
+
+// ================================================================
+// INIT
+// ================================================================
+function buildHomeScreen() {
+  const grid = document.getElementById('categories-grid');
+  grid.innerHTML = '';
+  CATEGORIES.forEach((cat, i) => {
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.innerHTML = `
+      <span class="cat-icon">${cat.icon}</span>
+      <div class="cat-info">
+        <div class="cat-name">${cat.name}</div>
+        <div class="cat-hint">${cat.hint}</div>
+      </div>
+      <span class="cat-badge">${cat.riddles.length} 題</span>
+    `;
+    card.addEventListener('click', () => startCategory(i));
+    grid.appendChild(card);
+  });
+}
+
+function init() {
+  buildHomeScreen();
+
+  document.getElementById('random-btn').addEventListener('click', startRandom);
+  document.getElementById('back-btn').addEventListener('click', renderHome);
+  document.getElementById('reveal-btn').addEventListener('click', revealAnswer);
+  document.getElementById('prev-btn').addEventListener('click', goPrev);
+  document.getElementById('next-btn').addEventListener('click', goNext);
+  document.getElementById('shuffle-btn').addEventListener('click', shuffleCurrent);
+
+  // Swipe on game card
+  setupSwipe(document.getElementById('riddle-card'));
+  setupSwipe(document.getElementById('screen-game'));
+
+  // Keyboard support
+  document.addEventListener('keydown', e => {
+    const gameActive = document.getElementById('screen-game').classList.contains('active');
+    if (!gameActive) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goNext();
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goPrev();
+    if (e.key === ' ' || e.key === 'Enter') revealAnswer();
+    if (e.key === 'Escape') renderHome();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
